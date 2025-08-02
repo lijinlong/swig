@@ -572,7 +572,9 @@ namespace swig {
     // Although __getitem__, front, back actually use a const value_type& return type, the typemaps below
     // use non-const so that they can be easily overridden by users if necessary.
     %typemap(ret, fragment="reference_container_owner", noblock=1) value_type& __getitem__, value_type& front, value_type& back {
-      (void)swig::container_owner<swig::traits<$*1_ltype>::category>::back_reference($result, $self);
+      if (!swig::container_owner<swig::traits<$*1_ltype>::category>::back_reference($result, $self) && PyErr_Occurred()) {
+        SWIG_fail;
+      }
     }
   }
 %enddef
@@ -854,7 +856,7 @@ namespace swig {
       }
 %#endif
       size_type size = seq.size();
-      if (size <= (size_type)INT_MAX) {
+      if (size <= (size_type)PY_SSIZE_T_MAX) {
 	PyObject *obj = PyTuple_New((Py_ssize_t)size);
 	Py_ssize_t i = 0;
 	for (const_iterator it = seq.begin(); it != seq.end(); ++it, ++i) {

@@ -32,7 +32,13 @@ SWIG_PyNumber_AsPyHash(PyObject *obj) {
 
 SWIGINTERN int
 SwigPyBuiltin_BadInit(PyObject *self, PyObject *SWIGUNUSEDPARM(args), PyObject *SWIGUNUSEDPARM(kwds)) {
-  PyErr_Format(PyExc_TypeError, "Cannot create new instances of type '%.300s'", self->ob_type->tp_name);
+#if PY_VERSION_HEX >= 0x03000000
+  PyObject *tpname = SWIG_PyType_GetFullyQualifiedName(Py_TYPE(self));
+  PyErr_Format(PyExc_TypeError, "Cannot create new instances of type '%S'", tpname);
+  SWIG_Py_DECREF(tpname);
+#else
+  PyErr_Format(PyExc_TypeError, "Cannot create new instances of type '%s'", Py_TYPE(self)->tp_name);
+#endif
   return -1;
 }
 
@@ -40,7 +46,13 @@ SWIGINTERN void
 SwigPyBuiltin_BadDealloc(PyObject *obj) {
   SwigPyObject *sobj = (SwigPyObject *)obj;
   if (sobj->own) {
-    PyErr_Format(PyExc_TypeError, "Swig detected a memory leak in type '%.300s': no callable destructor found.", obj->ob_type->tp_name);
+#if PY_VERSION_HEX >= 0x03000000
+    PyObject *tpname = SWIG_PyType_GetFullyQualifiedName(Py_TYPE(obj));
+    PyErr_Format(PyExc_TypeError, "Swig detected a memory leak in type '%S': no callable destructor found.", tpname);
+    SWIG_Py_DECREF(tpname);
+#else
+    PyErr_Format(PyExc_TypeError, "Swig detected a memory leak in type '%s': no callable destructor found.", Py_TYPE(obj)->tp_name);
+#endif
   }
 }
 
@@ -83,12 +95,28 @@ SwigPyBuiltin_SetterClosure (PyObject *obj, PyObject *val, void *closure) {
   SwigPyGetSet *getset;
   PyObject *tuple, *result;
   if (!closure) {
-    PyErr_Format(PyExc_TypeError, "Missing getset closure");
+    PyErr_Format(PyExc_AttributeError, "Missing getset closure");
+    return -1;
+  }
+  if (!val) {
+#if PY_VERSION_HEX >= 0x03000000
+    PyObject *tpname = SWIG_PyType_GetFullyQualifiedName(Py_TYPE(obj));
+    PyErr_Format(PyExc_AttributeError, "Illegal member variable deletion in type '%S'", tpname);
+    SWIG_Py_DECREF(tpname);
+#else
+    PyErr_Format(PyExc_AttributeError, "Illegal member variable deletion in type '%s'", Py_TYPE(obj)->tp_name);
+#endif
     return -1;
   }
   getset = (SwigPyGetSet *)closure;
   if (!getset->set) {
-    PyErr_Format(PyExc_TypeError, "Illegal member variable assignment in type '%.300s'", obj->ob_type->tp_name);
+#if PY_VERSION_HEX >= 0x03000000
+    PyObject *tpname = SWIG_PyType_GetFullyQualifiedName(Py_TYPE(obj));
+    PyErr_Format(PyExc_AttributeError, "Illegal member variable assignment in type '%S'", tpname);
+    SWIG_Py_DECREF(tpname);
+#else
+    PyErr_Format(PyExc_AttributeError, "Illegal member variable assignment in type '%s'", Py_TYPE(obj)->tp_name);
+#endif
     return -1;
   }
   tuple = PyTuple_New(1);
@@ -106,12 +134,28 @@ SwigPyBuiltin_FunpackSetterClosure (PyObject *obj, PyObject *val, void *closure)
   SwigPyGetSet *getset;
   PyObject *result;
   if (!closure) {
-    PyErr_Format(PyExc_TypeError, "Missing getset closure");
+    PyErr_Format(PyExc_AttributeError, "Missing getset closure");
+    return -1;
+  }
+  if (!val) {
+#if PY_VERSION_HEX >= 0x03000000
+    PyObject *tpname = SWIG_PyType_GetFullyQualifiedName(Py_TYPE(obj));
+    PyErr_Format(PyExc_AttributeError, "Illegal member variable deletion in type '%S'", tpname);
+    SWIG_Py_DECREF(tpname);
+#else
+    PyErr_Format(PyExc_AttributeError, "Illegal member variable deletion in type '%s'", Py_TYPE(obj)->tp_name);
+#endif
     return -1;
   }
   getset = (SwigPyGetSet *)closure;
   if (!getset->set) {
-    PyErr_Format(PyExc_TypeError, "Illegal member variable assignment in type '%.300s'", obj->ob_type->tp_name);
+#if PY_VERSION_HEX >= 0x03000000
+    PyObject *tpname = SWIG_PyType_GetFullyQualifiedName(Py_TYPE(obj));
+    PyErr_Format(PyExc_AttributeError, "Illegal member variable assignment in type '%S'", tpname);
+    SWIG_Py_DECREF(tpname);
+#else
+    PyErr_Format(PyExc_AttributeError, "Illegal member variable assignment in type '%s'", Py_TYPE(obj)->tp_name);
+#endif
     return -1;
   }
   result = (*getset->set)(obj, val);
@@ -130,7 +174,6 @@ SwigPyStaticVar_dealloc(PyDescrObject *descr) {
 SWIGINTERN PyObject *
 SwigPyStaticVar_repr(PyGetSetDescrObject *descr) {
 #if PY_VERSION_HEX >= 0x03000000
-
   return PyUnicode_FromFormat("<class attribute '%S' of type '%s'>", PyDescr_NAME(descr), PyDescr_TYPE(descr)->tp_name);
 #else
   return PyString_FromFormat("<class attribute '%s' of type '%s'>", PyString_AsString(PyDescr_NAME(descr)), PyDescr_TYPE(descr)->tp_name);
@@ -150,9 +193,9 @@ SwigPyStaticVar_get(PyGetSetDescrObject *descr, PyObject *obj, PyObject *SWIGUNU
   if (descr->d_getset->get != NULL)
     return descr->d_getset->get(obj, descr->d_getset->closure);
 #if PY_VERSION_HEX >= 0x03000000
-  PyErr_Format(PyExc_AttributeError, "attribute '%.300S' of '%.100s' objects is not readable", PyDescr_NAME(descr), PyDescr_TYPE(descr)->tp_name);
+  PyErr_Format(PyExc_AttributeError, "attribute '%S' of '%s' objects is not readable", PyDescr_NAME(descr), PyDescr_TYPE(descr)->tp_name);
 #else
-  PyErr_Format(PyExc_AttributeError, "attribute '%.300s' of '%.100s' objects is not readable", PyString_AsString(PyDescr_NAME(descr)), PyDescr_TYPE(descr)->tp_name);
+  PyErr_Format(PyExc_AttributeError, "attribute '%s' of '%s' objects is not readable", PyString_AsString(PyDescr_NAME(descr)), PyDescr_TYPE(descr)->tp_name);
 #endif
   return NULL;
 }
@@ -162,9 +205,9 @@ SwigPyStaticVar_set(PyGetSetDescrObject *descr, PyObject *obj, PyObject *value) 
   if (descr->d_getset->set != NULL)
     return descr->d_getset->set(obj, value, descr->d_getset->closure);
 #if PY_VERSION_HEX >= 0x03000000
-  PyErr_Format(PyExc_AttributeError, "attribute '%.300S' of '%.100s' objects is not writable", PyDescr_NAME(descr), PyDescr_TYPE(descr)->tp_name);
+  PyErr_Format(PyExc_AttributeError, "attribute '%S' of '%s' objects is not writable", PyDescr_NAME(descr), PyDescr_TYPE(descr)->tp_name);
 #else
-  PyErr_Format(PyExc_AttributeError, "attribute '%.300s' of '%.100s' objects is not writable", PyString_AsString(PyDescr_NAME(descr)), PyDescr_TYPE(descr)->tp_name);
+  PyErr_Format(PyExc_AttributeError, "attribute '%s' of '%s' objects is not writable", PyString_AsString(PyDescr_NAME(descr)), PyDescr_TYPE(descr)->tp_name);
 #endif
   return -1;
 }
@@ -173,26 +216,31 @@ SWIGINTERN int
 SwigPyObjectType_setattro(PyObject *typeobject, PyObject *name, PyObject *value) {
   PyObject *attribute;
   PyTypeObject *type;
-  descrsetfunc local_set;
 
   assert(PyType_Check(typeobject));
   type = (PyTypeObject *)typeobject;
   attribute = _PyType_Lookup(type, name);
   if (attribute != NULL) {
     /* Implement descriptor functionality, if any */
-    local_set = attribute->ob_type->tp_descr_set;
-    if (local_set != NULL)
-      return local_set(attribute, (PyObject *)type, value);
+    descrsetfunc local_set = Py_TYPE(attribute)->tp_descr_set;
+    if (local_set == NULL) {
 #if PY_VERSION_HEX >= 0x03000000
-    PyErr_Format(PyExc_AttributeError, "cannot modify read-only attribute '%.50s.%.400S'", type->tp_name, name);
+      PyObject *tpname = SWIG_PyType_GetFullyQualifiedName(type);
+      PyErr_Format(PyExc_AttributeError, "cannot modify read-only attribute '%S.%S'", tpname, name);
+      SWIG_Py_DECREF(tpname);
 #else 
-    PyErr_Format(PyExc_AttributeError, "cannot modify read-only attribute '%.50s.%.400s'", type->tp_name, PyString_AS_STRING(name));
+      PyErr_Format(PyExc_AttributeError, "cannot modify read-only attribute '%s.%s'", type->tp_name, PyString_AS_STRING(name));
 #endif
+    } else {
+      return local_set(attribute, (PyObject *)type, value);
+    }
   } else {
 #if PY_VERSION_HEX >= 0x03000000
-    PyErr_Format(PyExc_AttributeError, "type '%.50s' has no attribute '%.400S'", type->tp_name, name);
+    PyObject *tpname = SWIG_PyType_GetFullyQualifiedName(type);
+    PyErr_Format(PyExc_AttributeError, "type '%S' has no attribute '%S'", tpname, name);
+    SWIG_Py_DECREF(tpname);
 #else
-    PyErr_Format(PyExc_AttributeError, "type '%.50s' has no attribute '%.400s'", type->tp_name, PyString_AS_STRING(name));
+    PyErr_Format(PyExc_AttributeError, "type '%s' has no attribute '%s'", type->tp_name, PyString_AS_STRING(name));
 #endif
   }
 
@@ -200,7 +248,9 @@ SwigPyObjectType_setattro(PyObject *typeobject, PyObject *name, PyObject *value)
 }
 
 SWIGINTERN PyTypeObject*
-SwigPyStaticVar_Type(void) {
+SwigPyStaticVar_TypeOnce(void) {
+  static char SwigPyStaticVar_doc[] = "Swig member static variables";
+#ifndef SWIG_HEAPTYPES
   static PyTypeObject staticvar_type;
   static int type_init = 0;
   if (!type_init) {
@@ -211,7 +261,7 @@ SwigPyStaticVar_Type(void) {
       PyObject_HEAD_INIT(&PyType_Type)
       0,                                        /* ob_size */
 #endif
-      "swig_static_var_getset_descriptor",      /* tp_name */
+      SWIG_RUNTIME_MODULE ".SwigPyStaticVar",   /* tp_name */
       sizeof(PyGetSetDescrObject),              /* tp_basicsize */
       0,                                        /* tp_itemsize */
       (destructor)SwigPyStaticVar_dealloc,      /* tp_dealloc */
@@ -234,7 +284,7 @@ SwigPyStaticVar_Type(void) {
       0,                                        /* tp_setattro */
       0,                                        /* tp_as_buffer */
       Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_GC|Py_TPFLAGS_HAVE_CLASS, /* tp_flags */
-      0,                                        /* tp_doc */
+      SwigPyStaticVar_doc,                      /* tp_doc */
       SwigPyStaticVar_traverse,                 /* tp_traverse */
       0,                                        /* tp_clear */
       0,                                        /* tp_richcompare */
@@ -273,6 +323,9 @@ SwigPyStaticVar_Type(void) {
 #if PY_VERSION_HEX >= 0x030c0000
       0,                                        /* tp_watched */
 #endif
+#if PY_VERSION_HEX >= 0x030d00a4
+      0,                                        /* tp_versions_used */
+#endif
 #ifdef COUNT_ALLOCS
       0,                                        /* tp_allocs */
       0,                                        /* tp_frees */
@@ -281,17 +334,51 @@ SwigPyStaticVar_Type(void) {
       0                                         /* tp_next */
 #endif
     };
+    PyObject *runtime_data_module = SWIG_runtime_data_module();
     staticvar_type = tmp;
     type_init = 1;
     if (PyType_Ready(&staticvar_type) < 0)
       return NULL;
+    if (PyModule_AddObject(runtime_data_module, "SwigPyStaticVar", (PyObject *)&staticvar_type) == 0)
+      SWIG_Py_INCREF((PyObject *)&staticvar_type);
   }
   return &staticvar_type;
+#else
+  PyType_Slot slots[] = {
+    { Py_tp_doc, (void *)SwigPyStaticVar_doc},
+    { Py_tp_dealloc, (void *)(destructor)SwigPyStaticVar_dealloc },
+    { Py_tp_repr, (void *)(reprfunc)SwigPyStaticVar_repr },
+    { Py_tp_getattro, (void *)PyObject_GenericGetAttr },
+    { Py_tp_traverse, (void *)SwigPyStaticVar_traverse },
+    { Py_tp_descr_get, (void *)(descrgetfunc)SwigPyStaticVar_get },
+    { Py_tp_descr_set, (void *)(descrsetfunc)SwigPyStaticVar_set },
+    { 0, NULL }
+  };
+  PyType_Spec spec = {
+    SWIG_RUNTIME_MODULE ".SwigPyStaticVar",
+    sizeof(PyGetSetDescrObject),
+    0,
+    Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_GC|Py_TPFLAGS_HAVE_CLASS,
+    slots
+  };
+  PyObject *pytype = PyType_FromSpec(&spec);
+  PyObject *runtime_data_module = SWIG_runtime_data_module();
+  if (pytype && PyModule_AddObject(runtime_data_module, "SwigPyStaticVar", pytype) == 0)
+    SWIG_Py_INCREF(pytype);
+  return (PyTypeObject *)pytype;
+#endif
+}
+
+SWIGRUNTIME PyTypeObject *
+SwigPyStaticVar_Type(void) {
+  static PyTypeObject *SWIG_STATIC_POINTER(type) = SwigPyStaticVar_TypeOnce();
+  return type;
 }
 
 SWIGINTERN PyTypeObject*
-SwigPyObjectType(void) {
-  static char swigpyobjecttype_doc[] = "Metaclass for SWIG wrapped types";
+SwigPyObjectType_TypeOnce(void) {
+  static char SwigPyObjectType_doc[] = "Metaclass for SWIG wrapped types";
+#ifndef SWIG_HEAPTYPES
   static PyTypeObject swigpyobjecttype_type;
   static int type_init = 0;
   if (!type_init) {
@@ -302,7 +389,7 @@ SwigPyObjectType(void) {
       PyObject_HEAD_INIT(&PyType_Type)
       0,                                        /* ob_size */
 #endif
-      "SwigPyObjectType",                       /* tp_name */
+      SWIG_RUNTIME_MODULE ".SwigPyObjectType",  /* tp_name */
       PyType_Type.tp_basicsize,                 /* tp_basicsize */
       0,                                        /* tp_itemsize */
       0,                                        /* tp_dealloc */
@@ -325,7 +412,7 @@ SwigPyObjectType(void) {
       SwigPyObjectType_setattro,                /* tp_setattro */
       0,                                        /* tp_as_buffer */
       Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_CLASS, /* tp_flags */
-      swigpyobjecttype_doc,                     /* tp_doc */
+      SwigPyObjectType_doc,                     /* tp_doc */
       0,                                        /* tp_traverse */
       0,                                        /* tp_clear */
       0,                                        /* tp_richcompare */
@@ -364,6 +451,9 @@ SwigPyObjectType(void) {
 #if PY_VERSION_HEX >= 0x030c0000
       0,                                        /* tp_watched */
 #endif
+#if PY_VERSION_HEX >= 0x030d00a4
+      0,                                        /* tp_versions_used */
+#endif
 #ifdef COUNT_ALLOCS
       0,                                        /* tp_allocs */
       0,                                        /* tp_frees */
@@ -372,13 +462,42 @@ SwigPyObjectType(void) {
       0                                         /* tp_next */
 #endif
     };
+    PyObject *runtime_data_module = SWIG_runtime_data_module();
     swigpyobjecttype_type = tmp;
     type_init = 1;
     swigpyobjecttype_type.tp_base = &PyType_Type;
     if (PyType_Ready(&swigpyobjecttype_type) < 0)
       return NULL;
+    if (PyModule_AddObject(runtime_data_module, "SwigPyObjectType", (PyObject *)&swigpyobjecttype_type) == 0)
+      SWIG_Py_INCREF((PyObject *)&swigpyobjecttype_type);
   }
   return &swigpyobjecttype_type;
+#else
+  PyType_Slot slots[] = {
+    { Py_tp_setattro, (void *)SwigPyObjectType_setattro },
+    { Py_tp_doc, (void *)SwigPyObjectType_doc},
+    { Py_tp_base, (void *)&PyType_Type},
+    { 0, NULL }
+  };
+  PyType_Spec spec = {
+    SWIG_RUNTIME_MODULE ".SwigPyObjectType",
+    (int)PyType_Type.tp_basicsize,
+    0,
+    Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_CLASS,
+    slots
+  };
+  PyObject *pytype = PyType_FromSpec(&spec);
+  PyObject *runtime_data_module = SWIG_runtime_data_module();
+  if (pytype && PyModule_AddObject(runtime_data_module, "SwigPyObjectType", pytype) == 0)
+    SWIG_Py_INCREF(pytype);
+  return (PyTypeObject *)pytype;
+#endif
+}
+
+SWIGRUNTIME PyTypeObject *
+SwigPyObjectType_Type(void) {
+  static PyTypeObject *SWIG_STATIC_POINTER(type) = SwigPyObjectType_TypeOnce();
+  return type;
 }
 
 SWIGINTERN PyGetSetDescrObject *
@@ -398,19 +517,17 @@ SwigPyStaticVar_new_getset(PyTypeObject *type, PyGetSetDef *getset) {
   return descr;
 }
 
-SWIGINTERN void
-SwigPyBuiltin_InitBases(PyTypeObject *type, PyTypeObject **bases) {
+SWIGINTERN PyObject *
+SwigPyBuiltin_InitBases(PyTypeObject **bases) {
   Py_ssize_t base_count = 0;
   PyTypeObject **b;
   PyObject *tuple;
   Py_ssize_t i;
 
   if (!bases[0]) {
-    bases[0] = SwigPyObject_type();
+    bases[0] = SwigPyObject_Type();
     bases[1] = NULL;
   }
-  type->tp_base = bases[0];
-  SWIG_Py_INCREF((PyObject *)bases[0]);
   for (b = bases; *b != NULL; ++b)
     ++base_count;
   tuple = PyTuple_New(base_count);
@@ -418,7 +535,7 @@ SwigPyBuiltin_InitBases(PyTypeObject *type, PyTypeObject **bases) {
     SWIG_Py_INCREF((PyObject *)bases[i]);
     PyTuple_SET_ITEM(tuple, i, (PyObject *)bases[i]);
   }
-  type->tp_bases = tuple;
+  return tuple;
 }
 
 SWIGINTERN PyObject *
@@ -430,12 +547,12 @@ SwigPyBuiltin_ThisClosure (PyObject *self, void *SWIGUNUSEDPARM(closure)) {
 }
 
 SWIGINTERN void
-SwigPyBuiltin_SetMetaType (PyTypeObject *type, PyTypeObject *metatype)
+SwigPyBuiltin_SetMetaType(PyTypeObject *type, PyTypeObject *metatype)
 {
 #if PY_VERSION_HEX >= 0x030900a4
-    Py_SET_TYPE(type, metatype);
+  Py_SET_TYPE((PyObject *)type, metatype);
 #else
-    Py_TYPE(type) = metatype;
+  Py_TYPE(type) = metatype;
 #endif
 }
 
@@ -463,7 +580,9 @@ SWIGINTERN void
 SwigPyBuiltin_destructor_closure(SwigPyWrapperFunction wrapper, const char *wrappername, PyObject *a) {
   SwigPyObject *sobj;
   sobj = (SwigPyObject *)a;
-  SWIG_Py_XDECREF(sobj->dict);
+  if (sobj->weakreflist != NULL)
+    PyObject_ClearWeakRefs(a);
+  SWIG_Py_XDECREF(sobj->swigdict);
   if (sobj->own) {
     PyObject *o;
     PyObject *type = 0, *value = 0, *traceback = 0;
@@ -477,7 +596,7 @@ SwigPyBuiltin_destructor_closure(SwigPyWrapperFunction wrapper, const char *wrap
     PyErr_Restore(type, value, traceback);
     SWIG_Py_XDECREF(o);
   }
-  if (PyType_IS_GC(a->ob_type)) {
+  if (PyType_IS_GC(Py_TYPE(a))) {
     PyObject_GC_Del(a);
   } else {
     PyObject_Free(a);

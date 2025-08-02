@@ -20,10 +20,10 @@ namespace Swig {
       DirectorException(const char *msg="") : swig_msg(msg) {
       }
 
-      virtual ~DirectorException() throw() {
+      virtual ~DirectorException() SWIG_NOEXCEPT {
       }
 
-      const char *what() const throw() {
+      const char *what() const SWIG_NOEXCEPT {
         return swig_msg.c_str();
       }
   };
@@ -48,20 +48,6 @@ namespace Swig {
         throw DirectorPureVirtualException(msg);
       }
   };
-
-  /* simple thread abstraction for pthreads on win32 */
-#ifdef __THREAD__
-#define __PTHREAD__
-#if defined(_WIN32) || defined(__WIN32__)
-#define pthread_mutex_lock EnterCriticalSection
-#define pthread_mutex_unlock LeaveCriticalSection
-#define pthread_mutex_t CRITICAL_SECTION
-#define MUTEX_INIT(var) CRITICAL_SECTION var
-#else
-#include <pthread.h>
-#define MUTEX_INIT(var) pthread_mutex_t var = PTHREAD_MUTEX_INITIALIZER
-#endif
-#endif
 
   /* director base class */
   class Director {

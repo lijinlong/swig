@@ -34,6 +34,8 @@ eswig_SOURCES =	CParse/cscanner.c		\
 		DOH/memory.c			\
 		DOH/string.c			\
 		DOH/void.c			\
+		Doxygen/csharpdoc.cxx		\
+		Doxygen/csharpdoc.h		\
 		Doxygen/doxyentity.cxx		\
 		Doxygen/doxyentity.h		\
 		Doxygen/doxyparser.cxx		\
@@ -46,6 +48,7 @@ eswig_SOURCES =	CParse/cscanner.c		\
 		Doxygen/pydoc.h			\
 		Modules/allocate.cxx		\
 		Modules/contract.cxx		\
+		Modules/c.cxx		\
 		Modules/csharp.cxx		\
 		Modules/csharp_il2cpp.cxx		\
 		Modules/d.cxx			\
@@ -59,7 +62,6 @@ eswig_SOURCES =	CParse/cscanner.c		\
 		Modules/lang.cxx		\
 		Modules/lua.cxx			\
 		Modules/main.cxx		\
-		Modules/mzscheme.cxx		\
 		Modules/nested.cxx		\
 		Modules/ocaml.cxx		\
 		Modules/octave.cxx		\
@@ -98,7 +100,9 @@ eswig_SOURCES =	CParse/cscanner.c		\
 
 bin_PROGRAMS = eswig
 
-CParse/parser.c CParse/parser.h: CParse/parser.y
+# Use GNU make's grouped targets to avoid repeated bison execution for
+# each target.
+CParse/parser.c CParse/parser.h &: CParse/parser.y
 	$(BISON) $(AM_YFLAGS) $(YFLAGS) --output=CParse/parser.c $(srcdir)/CParse/parser.y
 
 # The executable is copied to the root directory for installation and running the test-suite.
@@ -121,7 +125,7 @@ distclean-local:
 # swig executable as a way of checking before and after the 'beautifying'.
 # Single files can be beautified with the beautify-file target, eg: 'make beautify-file INDENTFILE=chosenfile.c'
 
-SWIGTYPEDEFS=-T bool -T File -T DohObjInfo -T Parm -T Language -T List -T TargetLanguageModule -T Typetab -T ModuleFactory -T ErrorMessageFormat -T Symtab -T Hash -T Scanner -T String -T DohBase -T Node -T String_or_char -T SwigType -T Dispatcher -T Wrapper -T DohStringMethods -T DohFileMethods -T DohListMethods -T DohHashMethods -T DOH -T DohIterator -T ParmList -T FILE -T HashNode -T DOHObj_or_char -T DOHFile -T DOHString -T DOHString_or_char -T UpcallData
+SWIGTYPEDEFS=-T bool -T File -T DohObjInfo -T Parm -T Language -T List -T TargetLanguageModule -T Typetab -T ModuleFactory -T ErrorMessageFormat -T Symtab -T Hash -T Scanner -T String -T DohBase -T Node -T String_or_char -T SwigType -T Dispatcher -T Wrapper -T DohStringMethods -T DohFileMethods -T DohListMethods -T DohHashMethods -T DOH -T DohIterator -T ParmList -T FILE -T HashNode -T DOHObj_or_char -T DOHFile -T DOHString -T DOHString_or_char -T UpcallData -T DoxygenEntity -T string
 INDENTBAKSDIR=../IndentBaks
 
 beautify:

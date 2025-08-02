@@ -1,3 +1,9 @@
+#if PY_VERSION_HEX >= 0x03030000 && !defined(SWIG_NO_HEAPTYPES)
+#if !defined(SWIG_HEAPTYPES)
+#define SWIG_HEAPTYPES
+#endif
+#endif
+
 /* Compatibility macros for Python 3 */
 #if PY_VERSION_HEX >= 0x03000000
 
@@ -25,6 +31,16 @@
 #  define SWIG_Python_str_FromFormat PyString_FromFormat
 #endif
 
+#if defined(SWIG_HEAPTYPES)
+#if PY_VERSION_HEX < 0x030c0000
+#include <structmember.h>
+#define Py_READONLY READONLY
+#define Py_T_PYSSIZET T_PYSSIZET
+#endif
+#endif
+
+#include <stddef.h> /* For offsetof */
+
 
 /* Wrapper around PyUnicode_AsUTF8AndSize - call Py_XDECREF on the returned pbytes when finished with the returned string */
 SWIGINTERN const char *
@@ -50,7 +66,7 @@ SWIG_PyUnicode_AsUTF8AndSize(PyObject *str, Py_ssize_t *psize, PyObject **pbytes
 #endif
 }
 
-SWIGINTERN PyObject*
+SWIGINTERN PyObject *
 SWIG_Python_str_FromChar(const char *c)
 {
 #if PY_VERSION_HEX >= 0x03000000
@@ -60,6 +76,8 @@ SWIG_Python_str_FromChar(const char *c)
 #endif
 }
 
+#define SWIG_RUNTIME_MODULE "swig_runtime_data" SWIG_RUNTIME_VERSION
+
 /* SWIGPY_USE_CAPSULE is no longer used within SWIG itself, but some user interface files check for it. */
 # define SWIGPY_USE_CAPSULE
 #ifdef SWIGPYTHON_BUILTIN
@@ -67,7 +85,7 @@ SWIG_Python_str_FromChar(const char *c)
 #else
 # define SWIGPY_CAPSULE_ATTR_NAME "type_pointer_capsule" SWIG_TYPE_TABLE_NAME
 #endif
-# define SWIGPY_CAPSULE_NAME ("swig_runtime_data" SWIG_RUNTIME_VERSION "." SWIGPY_CAPSULE_ATTR_NAME)
+#define SWIGPY_CAPSULE_NAME SWIG_RUNTIME_MODULE "." SWIGPY_CAPSULE_ATTR_NAME
 
 #if PY_VERSION_HEX < 0x03020000
 #define PyDescr_TYPE(x) (((PyDescrObject *)(x))->d_type)
@@ -75,7 +93,7 @@ SWIG_Python_str_FromChar(const char *c)
 #define Py_hash_t long
 #endif
 
-#ifdef Py_LIMITED_API
+#if defined(Py_LIMITED_API)
 # define PyTuple_GET_ITEM PyTuple_GetItem
 /* Note that PyTuple_SetItem() has different semantics from PyTuple_SET_ITEM as it decref's the original tuple item, so in general they cannot be used
   interchangeably. However in SWIG-generated code PyTuple_SET_ITEM is only used with newly initialized tuples without any items and for them this does work. */
@@ -100,4 +118,32 @@ SWIG_Python_str_FromChar(const char *c)
 # define SWIG_Py_XINCREF Py_XINCREF
 # define SWIG_Py_DECREF Py_DECREF
 # define SWIG_Py_XDECREF Py_XDECREF
+#endif
+
+#if PY_VERSION_HEX >= 0x03000000
+SWIGINTERN PyObject *
+SWIG_PyType_GetFullyQualifiedName(PyTypeObject *type) {
+#if PY_VERSION_HEX >= 0x030d0000
+  return PyType_GetFullyQualifiedName(type);
+#else
+  PyObject *result = NULL;
+  PyObject *qualname = PyObject_GetAttrString((PyObject *)type, "__qualname__");
+  if (qualname) {
+    PyObject *mod = PyObject_GetAttrString((PyObject *)type, "__module__");
+    if (mod) {
+      if (PyUnicode_Check(mod) && PyUnicode_CompareWithASCIIString(mod, "builtins") && PyUnicode_CompareWithASCIIString(mod, "__main__")) {
+        result = PyUnicode_FromFormat("%U%c%U", mod, '.', qualname);
+        SWIG_Py_DECREF(qualname);
+      } else {
+        result = qualname;
+      }
+      SWIG_Py_DECREF(mod);
+    } else {
+      result = qualname;
+    }
+  }
+
+  return result;
+#endif
+}
 #endif

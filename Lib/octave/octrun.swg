@@ -43,6 +43,8 @@ SWIGRUNTIME octave_value SWIG_ErrorType(int code) {
     return "SWIG_SystemError";
   case SWIG_AttributeError:
     return "SWIG_AttributeError";
+  case SWIG_NullReferenceError:
+    return "SWIG_NullReferenceError";
   }
   return "SWIG unknown error";
 }
@@ -218,7 +220,7 @@ SWIGRUNTIME void swig_acquire_ownership_obj(void *vptr, int own);
   //
   // These should really be decoupled, with the class support added to Octave
   // and the shadow class given by an m-file script. That would dramatically 
-  // reduce the runtime complexity, and be more in line w/ other modules.
+  // reduce the runtime complexity, and be more in line with other modules.
 
   class octave_swig_type:public octave_base_value {
     struct cpp_ptr {
@@ -1672,7 +1674,7 @@ SWIGRUNTIME void SWIG_Octave_LinkGlobalValue(std::string name) {
   std::shared_ptr<octave::stack_frame> stackFrame = tree_eval.get_current_stack_frame();
 #else
   octave::call_stack& callStack = tree_eval.get_call_stack();
-  std::shared_ptr<octave::stack_frame> stackFrame = tree_eval.get_current_stack_frame();
+  std::shared_ptr<octave::stack_frame> stackFrame = callStack.get_current_stack_frame();
 #endif
   octave::symbol_record sym=symscope.lookup_symbol(name);
   stackFrame->mark_global(sym);

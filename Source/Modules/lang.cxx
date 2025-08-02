@@ -629,24 +629,9 @@ int Language::constantDirective(Node *n) {
 
   if (!ImportMode) {
     Swig_require("constantDirective", n, "name", "?value", NIL);
-    String *name = Getattr(n, "name");
-    String *value = Getattr(n, "value");
-    if (!value) {
-      value = Copy(name);
-    } else {
-      /*      if (checkAttribute(n,"type","char")) {
-         value = NewString(value);
-         } else {
-         value = NewStringf("%(escape)s", value);
-         }
-       */
-      Setattr(n, "rawvalue", value);
-      value = NewStringf("%(escape)s", value);
-      if (!Len(value))
-	Append(value, "\\0");
-      /*      Printf(stdout,"'%s' = '%s'\n", name, value); */
+    if (!Getattr(n, "value")) {
+      Setattr(n, "value", Getattr(n, "name"));
     }
-    Setattr(n, "value", value);
     this->constantWrapper(n);
     Swig_restore(n);
     return SWIG_OK;
@@ -2201,12 +2186,15 @@ int Language::classDirectorInit(Node *n) {
 int Language::classDirectorDestructor(Node *n) {
   /* 
      Always emit the virtual destructor in the declaration and in the
-     compilation unit.  Been explicit here can't make any damage, and
+     compilation unit.  Being explicit here can't make any damage, and
      can solve some nasty C++ compiler problems.
    */
   File *f_directors = Swig_filebyname("director");
   File *f_directors_h = Swig_filebyname("director_h");
-  if (Getattr(n, "throw")) {
+  if (Getattr(n, "noexcept")) {
+    Printf(f_directors_h, "    virtual ~%s() noexcept;\n", DirectorClassName);
+    Printf(f_directors, "%s::~%s() noexcept {\n}\n\n", DirectorClassName, DirectorClassName);
+  } else if (Getattr(n, "throw")) {
     Printf(f_directors_h, "    virtual ~%s() throw();\n", DirectorClassName);
     Printf(f_directors, "%s::~%s() throw() {\n}\n\n", DirectorClassName, DirectorClassName);
   } else {

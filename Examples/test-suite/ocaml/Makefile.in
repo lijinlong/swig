@@ -26,6 +26,7 @@ cpp11_strongly_typed_enumerations \
 cpp_enum \
 default_constructor \
 director_binary_string \
+director_binary_string_rev_len \
 director_comparison_operators \
 director_enum \
 director_primitives \
@@ -36,9 +37,6 @@ smart_pointer_inherit \
 
 FAILING_C_TESTS = \
 enums \
-
-CPP_TEST_CASES += \
-	inout \
 
 C_TEST_CASES += \
 	multivalue \
@@ -61,6 +59,10 @@ run_testcase = \
 include $(srcdir)/../common.mk
 
 # Overridden variables here
+
+# Ensure testsuite remains free from SWIG warnings.
+SWIGOPT += -Werror
+
 SWIGOPT += -w524 # Suppress SWIGWARN_LANG_EXPERIMENTAL warning
 
 # Custom tests - tests with additional commandline options

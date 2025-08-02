@@ -59,12 +59,12 @@ int yy() { return YY; }
  */
 const int s1a = sizeof(X); /* worked before 4.1.0 */
 //const int s1b = sizeof X; /* not currently supported */
-const int s2a = sizeof("a string" );
-const int s2b = sizeof "a string";
+const int s2a = sizeof("a  string" );
+const int s2b = sizeof "a  string";
 const int s3a = sizeof('c');
 const int s3b = sizeof('c');
-const int s4a = sizeof(L"a wstring");
-const int s4b = sizeof L"a wstring";
+const int s4a = sizeof(L"a  wstring");
+const int s4b = sizeof L"a  wstring";
 const int s5a = sizeof(L'C');
 const int s5b = sizeof L'C';
 const int s6a = sizeof(sizeof(X));
@@ -73,5 +73,22 @@ const int s7a = sizeof(3.14);
 const int s7b = sizeof 3.14;
 const int s8a = sizeof(2.1e-6);
 const int s8b = sizeof 2.1e-6;
+const int s9a = sizeof(-s8a);
+// const int s9b = sizeof -s8a; /* not currently supported */
+const int s10a = sizeof(xx());
+// Before 4.4.0 this gave:
+// Warning 328: Value assigned to s10b not used due to limited parsing implementation.
+const int s10b = sizeof xx();
 
 %}
+
+/* Regression test for #1917, fixed in 4.3.0. */
+#ifdef SWIGCSHARP
+%csconst(1) float_suffix_test;
+#endif
+#ifdef SWIGJAVA
+%javaconst(1) float_suffix_test;
+#endif
+%constant const float float_suffix_test = 4.0f;
+%constant const float float_suffix_test2 = 4.0f;
+#define float_suffix_test3 4.0f
